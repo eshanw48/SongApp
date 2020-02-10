@@ -1,3 +1,5 @@
+//todo: when initializing from the txt file mySongs.txt, if the line of text was a duplicate, we should remove it
+
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -30,27 +32,39 @@ public class SongController{
 
 	public void start(){
 		//populating the observable list from an array list obtained from reading the file
+		//checking to see if file exists
 		songList = FXCollections.observableArrayList();
-		BufferedReader songReader = new BufferedReader(new FileReader("/src/SongList/mySongs.txt"));	
-		String result=songReader.readLine();
-		while (result!=null){
-			//text is formatted "name artist album year"
-			//removing white space at beginning and end if any 
-			result=result.trim();
-			//creating song object to store the data
+		BufferedReader songReader = new BufferedReader(new FileReader("/SongList/mySongs.txt"));	
+		String toAdd=songReader.readLine();
+		while (toAdd!=null){
+			//text is formatted "name;artist;album;year;" in our mySongs.txt
+			//removing white space at the beginning and end if any 
+			toAdd=toAdd.trim();	
+
+			//need to create song object and add it to the list
+			//every entry has at least name and artist: "name;artist;"
+
+			
 		}
+		//closing the stream
+		songReader.close();
+
+		//feeding the data to our listview
+		listView.setItems(songList);
+		
 	}
 
-	//helper method to add songs
+	//helper method to add songs to our observable list
 	private boolean addSong(Song toAdd){
 		//need to iterate through the song observable list to see if the name and artist match case insensitive 		
 		for (int i=0;i<songList.size();i++){
-			if (toAdd.name.toUpperCase().equals(songList.get(i).name.toUpperCase()) && toAdd.artist.toUpperCase().equals(songList.get(i).author.toUpperCase())){
-				//then we have a duplicate
+			if (toAdd.name.toUpper().equals(songList.get(i).name.toUpper()) && toAdd.author.toUpper().equals(songList.get(i).author.toUpper())){
+				//then we have a match and we do not add
 				return false;
-			}	
+			}			
 		}
 		//then we did not find a match and we can add the song to the observable list
+		//we need to add the song in alphabetical order of names
 		songList.add(toAdd);
 		return true;
 		
