@@ -22,10 +22,19 @@ public class SongController{
 	@FXML Button deleteSongButton;
 	@FXML Button editDetailsButton;
 	@FXML Button addSongButton;
+
+	//these textfields are initially uneditable, and will only become editable once the user selects "edit details" or "add new song"
 	@FXML TextField songName;
 	@FXML TextField artistName;
 	@FXML TextField albumName;
 	@FXML TextField songYear;
+
+	//these FXML elements are hidden and part of adding songs or editing songs in our UI
+	//once the user needs to use these buttons, they will be made visible
+	@FXML Button saveEditButton;
+	@FXML Button cancelEditButton;
+	@FXML Button confirmAddButton;
+	@FXML Button cancelAddButton;
 
 	//private list of songs for the app
 	private ObservableList<Song> songList;
@@ -82,6 +91,23 @@ public class SongController{
 
 		//feeding the data to our listview
 		listView.setItems(songList);
+
+		//setting our listView to display only the name of the song and the artist in the format:
+		// "name | artist"
+		// using an anonymous class below
+
+		listView.setCellFactory(new Callback<ListView<Song>, ListCell<Song>>() {
+			@Override
+			protected void updateItem(Song item, boolean empty) {
+				super.updateItem(item,empty);
+
+				if (empty || item ==null || item.getName()== null || item.getArtist()==null){
+					setText(null);
+				} else {
+					setText(item.getName()+" | "+item.getArtist());
+				}
+			}
+		});
 		
 	}
 
@@ -137,6 +163,7 @@ public class SongController{
 			songWriter.write(songList.get(i).name+";"+songList.get(i).artist+";"+songList.get(i).album+";"+songList.get(i).year+";"+"\n"); 
 		}
 		songWriter.close();
+		//now our txt file is updated	
 
 		
 		
@@ -146,17 +173,26 @@ public class SongController{
 
 	@FXML
 	public void deleteSong(ActionEvent action){
-
+		//idea is to delete the song that is selected in the list view by the user
+		//if the list is empty, then error is given to the user in form of popup
+		//warns the user before deleting the song
 	}
 
 	@FXML
 	public void editSong(ActionEvent action){
-
+		//idea is the make the textboxes editable and add two more buttons below the ui window for editing
+		//these buttons will be "save edit" and "cancel edit"
+		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
 	}
 
 	@FXML
 	public void addSong(ActionEvent action){
-
+		//idea is to make the listview point to nothing
+		//then make the textboxes editable
+		//then have buttons below editing window popup
+		//these buttons will be "confirm addition" and "cancel addition"
+		//if the user tries to do anything different than editing the song data or hitting those buttons, they will get a warning from a popup
+		//we will use the helper method addSongHelper above to help us with the addition
 	}
 
 
