@@ -4,8 +4,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
+import javafx.util.Callback;
+import javafx.scene.control.ListCell;
+
+
 
 import java.io.FileReader;
 import java.io.BufferedReader;
@@ -17,7 +23,7 @@ import java.io.BufferedWriter;
 public class SongController{
 
 
-	@FXML ListView<String> listView;
+	@FXML ListView<Song> listView;
 	@FXML Button deleteSongButton;
 	@FXML Button editDetailsButton;
 	@FXML Button addSongButton;
@@ -30,19 +36,20 @@ public class SongController{
 
 	//these FXML elements are hidden and part of adding songs or editing songs in our UI
 	//once the user needs to use these buttons, they will be made visible
+	//once the user finishes the process of adding or deleting, the buttons should become invisible again
 	@FXML Button saveEditButton;
 	@FXML Button cancelEditButton;
 	@FXML Button confirmAddButton;
 	@FXML Button cancelAddButton;
 
-	//private list of songs for the app
+	//private list of songs for the app that syncs with the listview
 	private ObservableList<Song> songList;
 
-	//start has the purpose of initializing the listview with songList and selecting the first song automatically, if the song list is not empty
-	public void start(Stage mainStage){
+	//start has the purpose of initializing the listview with songList (from txtfile) and selecting the first song automatically, if the song list is not empty
+	public void start(Stage mainStage) throws Exception{
 		//populating the observable list from an array list obtained from reading the file
 		songList = FXCollections.observableArrayList();
-		File songData = new File("/SongList/mySongs.txt");
+		File songData = new File("mySongs.txt");
 		//this will make the txt file if there is no such file at the specified path
 		songData.createNewFile();
 		BufferedReader songReader = new BufferedReader(new FileReader(songData));	
@@ -61,19 +68,19 @@ public class SongController{
 			for (int i=0;i<toAdd.length();i++){
 				if (toAdd.charAt(i)==';'){
 					if (semicolonCount==0){
-						inList.name=toAdd.substring(0,i);	
+						inList.setTitle(toAdd.substring(0,i));	
 						lastSemicolon=i;
 						semicolonCount++;
 					} else if (semicolonCount==1){
-						inList.artist=toAdd.substring(lastSemicolon+1,i);
+						inList.setArtist(toAdd.substring(lastSemicolon+1,i));
 						lastSemicolon=i;
 						semicolonCount++;
 					} else if (semicolonCount==2){
-						inList.album=toAdd.substring(lastSemicolon+1,i);
+						inList.setAlbum(toAdd.substring(lastSemicolon+1,i));
 						lastSemicolon=i;
 						semicolonCount++;
 					} else {
-						inList.year=toAdd.substring(lastSemicolon+1,i);
+						inList.setYear(toAdd.substring(lastSemicolon+1,i));
 						lastSemicolon=i;
 						semicolonCount++;
 					}	
@@ -95,15 +102,15 @@ public class SongController{
 		// "name | artist"
 		// using an anonymous class below
 
-		listView.setCellFactory(new Callback<ListView<Song>, ListCell<Song>>() {
+		listView.setCellFactory(param -> new ListCell<Song>() {
 			@Override
 			protected void updateItem(Song item, boolean empty) {
 				super.updateItem(item,empty);
 
-				if (empty || item ==null || item.getName()== null || item.getArtist()==null){
+				if (empty || item ==null || item.getTitle()== null || item.getArtist()==null){
 					setText(null);
 				} else {
-					setText(item.getName()+" | "+item.getArtist());
+					setText(item.getTitle()+" | "+item.getArtist());
 				}
 			}
 		});
@@ -112,9 +119,9 @@ public class SongController{
 		//this also sets the textfields to the first song in the details
 		if (!songList.isEmpty()){
 			listView.getSelectionModel().select(0);
-			songName.setText(songList.get(0).getName());
+			songName.setText(songList.get(0).getTitle());
 			artistName.setText(songList.get(0).getArtist());
-			albumName.setText(songList.get(0).getAlbumName());
+			albumName.setText(songList.get(0).getAlbum());
 			songYear.setText(songList.get(0).getYear());
 
 		}
@@ -137,7 +144,7 @@ public class SongController{
 
 	@FXML
 	public void editSong(ActionEvent action){
-		//idea is the make the textboxes editable and add two more buttons below the ui window for editing
+		//idea is the make the textboxes editable and make hidden buttons below the ui window visible
 		//these buttons will be "save edit" and "cancel edit"
 		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
 	}
@@ -146,14 +153,14 @@ public class SongController{
 	public void addSong(ActionEvent action){
 		//idea is to make the listview point to nothing
 		//then make the textboxes editable
-		//then have buttons below editing window popup
+		//then make the buttons in the details section of the UI visible
 		//these buttons will be "confirm addition" and "cancel addition"
 		//if the user tries to do anything different than editing the song data or hitting those buttons, they will get a warning from a popup
 		//we will use the helper method addSongHelper above to help us with the addition
 	}
 
 	//helper method to add songs to our observable list
-	private boolean addSongHelper(Song toAdd){
+	private boolean addSongHelper(Song toAdd) throws Exception{
 		//need to iterate through the song observable list to see if the name and artist match case insensitive 		
 		//NEED TO ADD IN ALPHABETICAL ORDER
 		//IDEA: since our txt file is already sorted, we can just use binary search and figure out where to insert our item
@@ -163,24 +170,24 @@ public class SongController{
 		int low=0;
 		int high=songList.size()-1;
 		int mid;
-		boolean low=false;
+		boolean lowLast=false;
 		while(low<=high){
-			int mid=(high+low)/2;
+			mid=(high+low)/2;
 			int comparison = toAdd.compareTo(songList.get(mid));
 			if (comparison==0){
 				//then we found a duplicate and we do not add
 				return false;
 			} else if (comparison<0){
 				high=mid-1;
-				low=false;
+				lowLast=false;
 			} else {
 				low=mid+1;
-				low=true;
+				lowLast=true;
 			}
 		}
 		//now the index high-1 is where we should add
 		int addPosition = 0;
-		if (low=true){
+		if (lowLast=true){
 			addPosition=low-1;
 		} else {
 			addPosition=high+1;
@@ -196,12 +203,12 @@ public class SongController{
 		songList.add(addPosition,toAdd);
 
 		//updating the txt file 
-		File songData = new File("/SongList/mySongs.txt");
+		File songData = new File("mySongs.txt");
 		BufferedWriter songWriter = new BufferedWriter(new FileWriter(songData));
 		//we know our txt file exists because we added it on our start 
 		//we will overwrite all the data with our new list now
 		for (int i=0;i<songList.size();i++){
-			songWriter.write(songList.get(i).name+";"+songList.get(i).artist+";"+songList.get(i).album+";"+songList.get(i).year+";"+"\n"); 
+			songWriter.write(songList.get(i).getTitle()+";"+songList.get(i).getArtist()+";"+songList.get(i).getAlbum()+";"+songList.get(i).getYear()+";"+"\n"); 
 		}
 		songWriter.close();
 		//now our txt file is updated	
@@ -214,10 +221,10 @@ public class SongController{
 
 	//method to update the textboxes of details if the user selects another song
 	private void updateSelection(Stage mainStage){
-		songName.setText(listView.getSelectionModel.getSelectedItem().getName());			
-		artistName.setText(listView.getSelectionModel.getSelectedItem().getArtist());
-		albumName.setText(listView.getSelectionModel.getSelectedItem().getAlbum());
-		songYear.setText(listView.getSelectionModel.getSelectedItem().getYear());
+		songName.setText(listView.getSelectionModel().getSelectedItem().getTitle());			
+		artistName.setText(listView.getSelectionModel().getSelectedItem().getArtist());
+		albumName.setText(listView.getSelectionModel().getSelectedItem().getAlbum());
+		songYear.setText(listView.getSelectionModel().getSelectedItem().getYear());
 	} 
 
 

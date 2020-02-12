@@ -66,8 +66,8 @@ public class Song implements Comparable<Song>{
 	//compareto to sort first by name and then by artist if the names are the same
 	//I will use the string compare to to help me with this method
 	public int compareTo(Song other){
-		int nameComparison =this.name.toUpper().compareTo(other.name.toUpper()); 
-		int artistComparison =this.artist.toUpper().compareTo(other.artist.toUpper())==0;
+		int nameComparison =this.title.toUpperCase().compareTo(other.title.toUpperCase()); 
+		int artistComparison =this.artist.toUpperCase().compareTo(other.artist.toUpperCase());
 
 		if (nameComparison ==0){
 			if (artistComparison==0){
