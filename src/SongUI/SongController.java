@@ -1,5 +1,4 @@
-//todo: create txt file with songs if there is none,write changes to the txt file
-
+import javafx.stage.Stage;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -40,7 +39,7 @@ public class SongController{
 	private ObservableList<Song> songList;
 
 	//start has the purpose of initializing the listview with songList and selecting the first song automatically, if the song list is not empty
-	public void start(){
+	public void start(Stage mainStage){
 		//populating the observable list from an array list obtained from reading the file
 		songList = FXCollections.observableArrayList();
 		File songData = new File("/SongList/mySongs.txt");
@@ -108,7 +107,49 @@ public class SongController{
 				}
 			}
 		});
-		
+
+		//initializing the listview to select the first song if the observable list is not empty
+		//this also sets the textfields to the first song in the details
+		if (!songList.isEmpty()){
+			listView.getSelectionModel().select(0);
+			songName.setText(songList.get(0).getName());
+			artistName.setText(songList.get(0).getArtist());
+			albumName.setText(songList.get(0).getAlbumName());
+			songYear.setText(songList.get(0).getYear());
+
+		}
+
+
+		//setting listener to the listview to track changes in selection
+		//(i.e: The textfields of the details should change if the user selects another song from the listview)
+		listView.getSelectionModel().selectedIndexProperty().addListener(
+				(obs,oldVal,newVal) -> updateSelection(mainStage));
+						
+	}
+
+	
+	@FXML
+	public void deleteSong(ActionEvent action){
+		//idea is to delete the song that is selected in the list view by the user
+		//if the list is empty, then error is given to the user in form of popup
+		//warns the user before deleting the song
+	}
+
+	@FXML
+	public void editSong(ActionEvent action){
+		//idea is the make the textboxes editable and add two more buttons below the ui window for editing
+		//these buttons will be "save edit" and "cancel edit"
+		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
+	}
+
+	@FXML
+	public void addSong(ActionEvent action){
+		//idea is to make the listview point to nothing
+		//then make the textboxes editable
+		//then have buttons below editing window popup
+		//these buttons will be "confirm addition" and "cancel addition"
+		//if the user tries to do anything different than editing the song data or hitting those buttons, they will get a warning from a popup
+		//we will use the helper method addSongHelper above to help us with the addition
 	}
 
 	//helper method to add songs to our observable list
@@ -171,30 +212,13 @@ public class SongController{
 		
 	}
 
-	@FXML
-	public void deleteSong(ActionEvent action){
-		//idea is to delete the song that is selected in the list view by the user
-		//if the list is empty, then error is given to the user in form of popup
-		//warns the user before deleting the song
-	}
-
-	@FXML
-	public void editSong(ActionEvent action){
-		//idea is the make the textboxes editable and add two more buttons below the ui window for editing
-		//these buttons will be "save edit" and "cancel edit"
-		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
-	}
-
-	@FXML
-	public void addSong(ActionEvent action){
-		//idea is to make the listview point to nothing
-		//then make the textboxes editable
-		//then have buttons below editing window popup
-		//these buttons will be "confirm addition" and "cancel addition"
-		//if the user tries to do anything different than editing the song data or hitting those buttons, they will get a warning from a popup
-		//we will use the helper method addSongHelper above to help us with the addition
-	}
-
+	//method to update the textboxes of details if the user selects another song
+	private void updateSelection(Stage mainStage){
+		songName.setText(listView.getSelectionModel.getSelectedItem().getName());			
+		artistName.setText(listView.getSelectionModel.getSelectedItem().getArtist());
+		albumName.setText(listView.getSelectionModel.getSelectedItem().getAlbum());
+		songYear.setText(listView.getSelectionModel.getSelectedItem().getYear());
+	} 
 
 
 
