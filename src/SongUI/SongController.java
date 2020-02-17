@@ -1,12 +1,20 @@
+/* By Vishal Patel and Eshan Wadhwa */
+
 import javafx.stage.Stage;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.collections.ObservableList;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.util.Callback;
 import javafx.scene.control.ListCell;
@@ -17,6 +25,14 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Optional;
 import java.io.BufferedWriter;
 
 
@@ -33,6 +49,8 @@ public class SongController{
 	@FXML TextField artistName;
 	@FXML TextField albumName;
 	@FXML TextField songYear;
+	
+	
 
 	//these FXML elements are hidden and part of adding songs or editing songs in our UI
 	//once the user needs to use these buttons, they will be made visible
@@ -41,97 +59,80 @@ public class SongController{
 	@FXML Button cancelEditButton;
 	@FXML Button confirmAddButton;
 	@FXML Button cancelAddButton;
+	@FXML Button exitButton;
 
 	//private list of songs for the app that syncs with the listview
 	private ObservableList<Song> songList;
 
 	//start has the purpose of initializing the listview with songList (from txtfile) and selecting the first song automatically, if the song list is not empty
 	public void start(Stage mainStage) throws Exception{
-		//populating the observable list from an array list obtained from reading the file
-		songList = FXCollections.observableArrayList();
-		File songData = new File("mySongs.txt");
-		//this will make the txt file if there is no such file at the specified path
-		songData.createNewFile();
-		BufferedReader songReader = new BufferedReader(new FileReader(songData));	
-		String toAdd=songReader.readLine();
-		while (toAdd!=null){
-			//text is formatted "name;artist;album;year;" in our mySongs.txt
-			//if no album : "name;artist;;year;"
-			//if no year: "name;artist;album;;"
-			//if no album or year: "name;artist;;;"
-			//songs are in alphabetical order
-			//removing white space at the beginning and end if any 
-			toAdd=toAdd.trim();	
-			Song inList = new Song();
-			int lastSemicolon=0;
-			int semicolonCount=0;
-			for (int i=0;i<toAdd.length();i++){
-				if (toAdd.charAt(i)==';'){
-					if (semicolonCount==0){
-						inList.setTitle(toAdd.substring(0,i));	
-						lastSemicolon=i;
-						semicolonCount++;
-					} else if (semicolonCount==1){
-						inList.setArtist(toAdd.substring(lastSemicolon+1,i));
-						lastSemicolon=i;
-						semicolonCount++;
-					} else if (semicolonCount==2){
-						inList.setAlbum(toAdd.substring(lastSemicolon+1,i));
-						lastSemicolon=i;
-						semicolonCount++;
-					} else {
-						inList.setYear(toAdd.substring(lastSemicolon+1,i));
-						lastSemicolon=i;
-						semicolonCount++;
-					}	
-				}
-			}
-			songList.add(inList);
-			//now our song object is populated with data in alphabetical order of the list
+		 /* create an ObservableList from an ArrayList created by readFromFile*/
+		songList = FXCollections.observableArrayList(readFromFile("src/songs.txt")); //change this when packages made
+	      listView.setItems(songList); 
+	      
+	      listView.setCellFactory(new Callback<ListView<Song>, ListCell<Song>>(){
+	    	  
+	            @Override
+	            public ListCell<Song> call(ListView<Song> p) {
+	                 
+	                ListCell<Song> cell = new ListCell<Song>(){
+	 
+	                    @Override
+	                    protected void updateItem(Song s, boolean bln) {
+	                        super.updateItem(s, bln);
+	                        if (s != null) {
+	                            setText(s.getTitle());
+	                        }
+	                        else if (s == null)
+	                        {
+	                        	setText(null);
+	                        }
+	                    }
+	 
+	                };
+	                 
+	                return cell;
+	            }
+	        });
+	      
+	      // select the first item
+	      if (!songList.isEmpty())
+	    	  listView.getSelectionModel().select(0);
+	      // show the selected song
+	      showSong();
 
-
-			
-		}
-		//closing the stream
-		songReader.close();
-
-		//feeding the data to our listview
-		listView.setItems(songList);
-
-		//setting our listView to display only the name of the song and the artist in the format:
-		// "name | artist"
-		// using an anonymous class below
-
-		listView.setCellFactory(param -> new ListCell<Song>() {
-			@Override
-			protected void updateItem(Song item, boolean empty) {
-				super.updateItem(item,empty);
-
-				if (empty || item ==null || item.getTitle()== null || item.getArtist()==null){
-					setText(null);
-				} else {
-					setText(item.getTitle()+" | "+item.getArtist());
-				}
-			}
-		});
-
-		//initializing the listview to select the first song if the observable list is not empty
-		//this also sets the textfields to the first song in the details
-		if (!songList.isEmpty()){
-			listView.getSelectionModel().select(0);
-			songName.setText(songList.get(0).getTitle());
-			artistName.setText(songList.get(0).getArtist());
-			albumName.setText(songList.get(0).getAlbum());
-			songYear.setText(songList.get(0).getYear());
-
-		}
-
-
-		//setting listener to the listview to track changes in selection
-		//(i.e: The textfields of the details should change if the user selects another song from the listview)
-		listView.getSelectionModel().selectedIndexProperty().addListener(
-				(obs,oldVal,newVal) -> updateSelection(mainStage));
-						
+	      // set listener for the items
+	      listView
+	      .getSelectionModel()
+	      .selectedItemProperty()
+	      .addListener(
+	    		  (obs, oldVal, newVal) -> 
+	    		  showSong());
+	      
+	      mainStage.setOnCloseRequest(event -> {
+	    	  
+	    	 //save songs to songs.txt file
+	    	  PrintWriter writer;
+	    	  	try {
+	    	  			File file = new File ("src/songs.txt"); //change this when packages made
+	    	  			file.createNewFile();
+	    	  			writer = new PrintWriter(file);
+						for(Song s: songList)
+				    	  {
+				    		  writer.println(s.getTitle());
+				    		  writer.println(s.getArtist());
+				    		  writer.println(s.getAlbum());
+				    		  writer.println(s.getYear());
+				    		  
+				    	  }
+				    	 writer.close(); 
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}    	 
+	      });	
+	      
+	    
 	}
 
 	
@@ -140,14 +141,88 @@ public class SongController{
 		//idea is to delete the song that is selected in the list view by the user
 		//if the list is empty, then error is given to the user in form of popup
 		//warns the user before deleting the song
+		
+		
+		if (songList.isEmpty()) {
+			   showError("There is nothing to delete.");
+			   return;
+		   }
+		   
+		   Song item = listView.getSelectionModel().getSelectedItem();
+		   int index = listView.getSelectionModel().getSelectedIndex();
+		   
+		   Alert alert = 
+				   new Alert(AlertType.INFORMATION);
+		   alert.setTitle("Delete Item");
+		   alert.setHeaderText(
+				   "Delete Song");
+
+		   String content = "Are you sure you want to delete " + item.getTitle() + "?";
+
+		   alert.setContentText(content);
+
+		   Optional<ButtonType> result = alert.showAndWait();
+		   if (result.isPresent()) {
+			   songList.remove(item);
+			   //songs.remove(index);
+			   
+			   if (songList.isEmpty()) {
+				   songName.setText("");
+				   artistName.setText("");
+				   albumName.setText("");
+				   songYear.setText("");
+			   }
+			  else if(index == songList.size()-1)
+			   {
+				   listView.getSelectionModel().select(index--);
+			   }
+			   else
+			   {
+				   listView.getSelectionModel().select(index++);
+			   }
+			   showSong();
+		   }
+		
+		
+		
+		
 	}
 
 	@FXML
-	public void editSong(ActionEvent action){
+	public void editSong(ActionEvent action){ //FIX TESTCASES
 		//idea is the make the textboxes editable and make hidden buttons below the ui window visible
 		//these buttons will be "save edit" and "cancel edit"
 		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
-	}
+		
+		if (songList.isEmpty()) {
+			   showError("There is nothing to edit.");
+			   return;
+		   }
+		   
+		   int index = listView.getSelectionModel().getSelectedIndex();
+		   
+					   String error = checkFields(songName.getText(), artistName.getText(),
+							   albumName.getText(), songYear.getText());
+					   
+					   if (error != null) {
+						   if (error.equals("Title and Artist cannot already exist in library.") 
+								   && songName.getText().equals(listView.getSelectionModel().getSelectedItem().getTitle()) 
+								   && artistName.getText().equals(listView.getSelectionModel().getSelectedItem().getArtist()))
+								   {
+							   			
+							   Song temp = new Song(songName.getText(),artistName.getText(),albumName.getText(),songYear.getText());
+							   songList.set(index,temp);
+							   listView.getSelectionModel().select(index);
+							   showSong();
+							   return;
+								   }
+						  showError(error);
+						   return;
+					   }
+						 showSong();
+					   }
+					   
+	
 
 	@FXML
 	public void addSong(ActionEvent action){
@@ -157,7 +232,71 @@ public class SongController{
 		//these buttons will be "confirm addition" and "cancel addition"
 		//if the user tries to do anything different than editing the song data or hitting those buttons, they will get a warning from a popup
 		//we will use the helper method addSongHelper above to help us with the addition
+		
+		 int index = listView.getSelectionModel().getSelectedIndex();
+		   
+		 			   Song tempSong;
+				  
+					   
+					   String error = checkFields(songName.getText(), artistName.getText(),
+							   albumName.getText(), songYear.getText());
+					   
+					   if (error != null) {
+						   showError(error);
+						   return;
+						   
+					   }
+						
+					   if (songYear.getText().trim().isEmpty())
+						    tempSong = new Song(songName.getText().trim(),
+								   artistName.getText().trim(),
+								   albumName.getText().trim(),
+								   "");
+						   
+					   tempSong = new Song(songName.getText().trim(),
+							   artistName.getText().trim(),
+							   albumName.getText().trim(),
+							   songYear.getText().trim());
+				   
+				   //return null;
+			   
+		     
+			   songList.add(tempSong);
+			   //songs.add(tempSong);
+			   
+			   FXCollections.sort(songList, new SongComparator());
+			  // Collections.sort(songs, new SongComparator());
+			   
+			   //if this is first song added, then select it
+			   if (songList.size() == 1) {
+				   listView.getSelectionModel().select(0);
+			   }
+			   else
+			   {
+				   index = 0;
+				   for(Song s: songList)
+				   {
+					   
+					   if(s == tempSong)
+					   {
+						  listView.getSelectionModel().select(index);
+						  break;
+					   }
+					   
+					   index++;
+				   }
+			   }
+				   	
+		
 	}
+	
+	@FXML
+    void exitProgram(ActionEvent event) {
+		//Platform.exit(); //it exits the program, but does not save to the text file so do not use for now.
+
+    }
+	
+	
 
 	//helper method to add songs to our observable list
 	private boolean addSongHelper(Song toAdd) throws Exception{
@@ -226,9 +365,106 @@ public class SongController{
 		albumName.setText(listView.getSelectionModel().getSelectedItem().getAlbum());
 		songYear.setText(listView.getSelectionModel().getSelectedItem().getYear());
 	} 
+	
+	private void showError(String error) {
+		   Alert alert = 
+				   new Alert(AlertType.INFORMATION);
+		   alert.setTitle("Error");
+		   alert.setHeaderText("Error");
+		   String content = error;
+		   alert.setContentText(content);
+		   alert.showAndWait();
+	   }
+
+	private String checkFields(String title, String artist, String album, String year) {
+		   if (title.trim().isEmpty())
+			   return "Title cannot be empty.";
+		   else if (artist.trim().isEmpty())
+			   return "Artist cannot be empty.";
+		   else if (!isUniqueSong(title, artist))
+			   return "Title and Artist cannot already exist in library.";
+		   
+		   else if (!year.trim().isEmpty()) {
+			   if (!year.trim().matches("[0-9]+"))
+				   return "Year must only contain numbers.";
+			   else if (year.trim().length() != 4)
+				   return "Year must be 4 digits long.";
+		   }
+		   
+		   return null;
+	   }
+
+	private boolean isUniqueSong(String title, String artist) {
+		   for (Song s : songList) {
+			   				   
+			   if (s.getTitle().toLowerCase().equals(title.trim().toLowerCase()) &&
+					   s.getArtist().toLowerCase().equals(artist.trim().toLowerCase()))
+			   {
+				   return false;
+			   }
+				   
+		   }
+		   return true;
+	   }
+	
+	private void showSong() {
+		   if (listView.getSelectionModel().getSelectedIndex() < 0)
+			   return;
+		   
+		
+		   
+		   Song s = listView.getSelectionModel().getSelectedItem();
+		  
+		   
+		   songName.setText(s.getTitle());
+		   artistName.setText(s.getArtist());
+		   albumName.setText(s.getAlbum());
+		   songYear.setText(s.getYear());
+	   }
 
 
 
 
+private ArrayList<Song> readFromFile(String filePathName)
+{
+	   ArrayList <Song> songs = new ArrayList<Song>();
+	   BufferedReader br;
+	   Path filePath = Paths.get(filePathName);
+	   try {
 
+			if (!new File(filePathName).exists())
+			{
+			   return songs;
+			}
+		   br = Files.newBufferedReader(filePath);
+		   String line = br.readLine();
+			
+		   while (line != null) { 
+	              
+			   String title = line;
+	               
+			   line = br.readLine();
+			   String artist = line;
+	               
+			   line = br.readLine();
+			   String album = line;
+	               
+			   line = br.readLine();
+			   String year = line;
+	               
+			   Song temp = new Song(title, artist, album, year);
+			   songs.add(temp);
+	               
+			   line = br.readLine(); //to the next song name, if not null
+		   }
+		  
+			
+	   } catch (IOException e) {
+		   e.printStackTrace();
+	   }
+	      
+	   //sort songs alphabetically by title
+	   Collections.sort(songs, new SongComparator());
+	   return songs;
+}
 }
