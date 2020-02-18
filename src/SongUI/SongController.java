@@ -1,3 +1,4 @@
+
 /* By Vishal Patel and Eshan Wadhwa */
 
 import javafx.stage.Stage;
@@ -189,7 +190,7 @@ public class SongController{
 	}
 
 	@FXML
-	public void editSong(ActionEvent action){ //FIX TESTCASES
+	public void editSong(ActionEvent action){ 
 		//idea is the make the textboxes editable and make hidden buttons below the ui window visible
 		//these buttons will be "save edit" and "cancel edit"
 		//if the user tries to do anything besides editing these textboxes or clicking "save edit" or "cancel edit", then the user will get a warning
@@ -219,9 +220,11 @@ public class SongController{
 						  showError(error);
 						   return;
 					   }
+					   Song temp2 = new Song(songName.getText(),artistName.getText(),albumName.getText(),songYear.getText());
+					   songList.set(index,temp2);
+					   listView.getSelectionModel().select(index);
 						 showSong();
-					   }
-					   
+					   }			   
 	
 
 	@FXML
