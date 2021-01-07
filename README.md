@@ -1,0 +1,1 @@
+An application, made using JavaFX, that has a graphical user interface which manages a library of songs. The application can display a song, show the song’s details, and add, delete, or edit a selected song. All data will be saved when the user exits the program.
